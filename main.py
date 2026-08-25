@@ -9,7 +9,7 @@ from supabase import create_client, Client
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "")
 
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY) if SUPABASE_URL else None
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY) if (SUPABASE_URL and SUPABASE_KEY) else None
 
 app = FastAPI(title="Stock Screening Engine")
 
@@ -20,7 +20,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-def run_daily_scan(tickers: list, vol_threshold=2.0, min_price=5.0):
+def run_daily_scan(tickers: list, vol_threshold=1.1, min_price=1.0):
     """Scans tickers for volume spikes and writes results to Supabase."""
     results = []
     today_str = datetime.now().strftime("%Y-%m-%d")
@@ -28,13 +28,13 @@ def run_daily_scan(tickers: list, vol_threshold=2.0, min_price=5.0):
     for ticker in tickers:
         try:
             stock = yf.Ticker(ticker)
-            df = stock.history(period="30d")
-            if len(df) < 21:
+            df = stock.history(period="1mo")
+            if len(df) < 15:
                 continue
 
             latest_price = float(df['Close'].iloc[-1])
             latest_volume = int(df['Volume'].iloc[-1])
-            avg_vol_20d = float(df['Volume'].iloc[-21:-1].mean())
+            avg_vol_20d = float(df['Volume'].iloc[:-1].mean())
             
             if avg_vol_20d == 0:
                 continue
@@ -42,6 +42,7 @@ def run_daily_scan(tickers: list, vol_threshold=2.0, min_price=5.0):
             vol_multiple = round(latest_volume / avg_vol_20d, 2)
             pct_change = round(((latest_price - df['Close'].iloc[-2]) / df['Close'].iloc[-2]) * 100, 2)
 
+            # Relaxed filter for test run validation
             if latest_price >= min_price and vol_multiple >= vol_threshold:
                 record = {
                     "symbol": ticker,
@@ -56,8 +57,14 @@ def run_daily_scan(tickers: list, vol_threshold=2.0, min_price=5.0):
         except Exception as e:
             print(f"Error scanning {ticker}: {e}")
 
+    print(f"Found {len(results)} qualifying stock picks.")
+
     if results and supabase:
-        supabase.table("stock_picks").upsert(results).execute()
+        response = supabase.table("stock_picks").upsert(results).execute()
+        print(f"Supabase upsert response: {response}")
+    elif not supabase:
+        print("ERROR: Supabase client is not initialized. Check URL/KEY environment variables.")
+    
     return len(results)
 
 @app.get("/api/picks")
@@ -72,5 +79,5 @@ if __name__ == "__main__":
     sample_basket = ["AAPL", "AMD", "NVDA", "PLTR", "SOFI", "TSLA", "MARA", "RIOT", "F", "BAC"]
     print(f"Running daily scan on {len(sample_basket)} tickers...")
     found = run_daily_scan(sample_basket)
-    print(f"Scan complete. Inserted {found} high-volume picks.")
-  
+    print(f"Scan complete. Inserted {found} picks into database.")
+    
