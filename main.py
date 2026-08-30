@@ -79,3 +79,4 @@ if __name__ == "__main__":
     print(f"Running daily scan on {len(sample_basket)} tickers...")
     found = run_daily_scan(sample_basket)
     print(f"Scan complete. Inserted {found} high-volume picks.")
+    
