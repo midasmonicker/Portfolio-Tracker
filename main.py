@@ -5,7 +5,7 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["portfolio-tracker-6byh182nm-midas-monicker.vercel.app", "http://localhost:8000",],
+    allow_origins=["https://portfolio-tracker-seven-beta.vercel.app", "http://localhost:8000",],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
