@@ -90,7 +90,7 @@ def get_picks():
     # Fetch picks from Supabase
     response = supabase.table("picks").select("*").execute()
     # Return directly as a list instead of nesting in a dictionary
-    return response.data
+    return {"date": "2026-09-12", "picks": response.data}
     
 if __name__ == "__main__":
     sample_basket = ["AAPL", "AMD", "NVDA", "PLTR", "SOFI", "TSLA", "MARA", "RIOT", "F", "BAC", "INTC", "AMZN", "MSFT", "GOOGL"]
