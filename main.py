@@ -87,10 +87,13 @@ def run_daily_scan(tickers: list, vol_threshold=1.2, min_price=5.0):
 
 @app.get("/api/picks")
 def get_picks():
-    # Fetch picks from Supabase
-    response = supabase.table("picks").select("*").execute()
-    # Return directly as a list instead of nesting in a dictionary
-    return {"date": "2026-09-12", "picks": response.data}
+    try:
+        # Querying the correct table name: 'stock_picks'
+        response = supabase.table("stock_picks").select("*").execute()
+        return {"date": "2026-09-12", "picks": response.data}
+    except Exception as e:
+        print(f"Error fetching stock picks: {e}")
+        return {"error": str(e), "picks": []}
     
 if __name__ == "__main__":
     sample_basket = ["AAPL", "AMD", "NVDA", "PLTR", "SOFI", "TSLA", "MARA", "RIOT", "F", "BAC", "INTC", "AMZN", "MSFT", "GOOGL"]
