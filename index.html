@@ -11,7 +11,8 @@
     .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; margin-top: 20px; }
     .card { background: #1e293b; border-radius: 8px; padding: 16px; border: 1px solid #334155; }
     .ticker { font-size: 1.4rem; font-weight: bold; color: #4ade80; }
-    .status { text-align: center; font-style: italic; color: #94a3b8; margin-top: 20px; }
+    .status { text-align: center; font-style: italic; color: #94a3b8; margin-top: 20px; background: #1e293b; padding: 12px; border-radius: 6px; }
+    .error { color: #f87171; border: 1px solid #7f1d1d; }
     button { display: block; margin: 0 auto 20px; background: #0284c7; color: white; border: none; padding: 10px 20px; font-size: 1rem; border-radius: 6px; cursor: pointer; }
     button:hover { background: #0369a1; }
   </style>
@@ -31,39 +32,43 @@
     const statusEl = document.getElementById("status");
     const containerEl = document.getElementById("picks-container");
     
+    statusEl.className = "status";
     statusEl.textContent = "Fetching data from Render...";
     containerEl.innerHTML = "";
 
     try {
       const response = await fetch(API_URL);
       if (!response.ok) {
-        throw new Error("HTTP Status: " + response.status);
+        throw new Error("HTTP Status " + response.status);
       }
 
       const data = await response.json();
-      console.log("Raw JSON payload:", data);
 
-      // Extract picks array safely whether data is array or object
-      const picks = Array.isArray(data) ? data : (data.picks || []);
-      const scanDate = data.date || (picks.length > 0 ? picks[0].scan_date : null);
+      // Extract the array regardless of response shape
+      let list = [];
+      if (Array.isArray(data)) {
+        list = data;
+      } else if (data && Array.isArray(data.picks)) {
+        list = data.picks;
+      }
 
-      if (!picks || picks.length === 0) {
-        statusEl.textContent = "No stock picks found for today.";
+      if (list.length === 0) {
+        statusEl.textContent = "Connected successfully, but 0 stock picks were returned.";
         return;
       }
 
-      statusEl.textContent = scanDate ? `Showing picks for ${scanDate}` : "";
+      const scanDate = (data && data.date) || list[0].scan_date || "Latest";
+      statusEl.textContent = "Showing picks for " + scanDate + " (" + list.length + " total)";
 
-      picks.forEach(pick => {
+      list.forEach(pick => {
         const card = document.createElement("div");
         card.className = "card";
         
-        // Format values safely
         const symbol = pick.symbol || pick.ticker || "N/A";
-        const price = pick.price !== undefined && pick.price !== null ? `$${pick.price}` : "N/A";
-        const vol = pick.vol_multiple !== undefined && pick.vol_multiple !== null ? `${pick.vol_multiple}x` : "N/A";
-        const change = pick.pct_change !== undefined && pick.pct_change !== null ? `${pick.pct_change}%` : "N/A";
-        const date = pick.scan_date || scanDate || "N/A";
+        const price = (pick.price !== undefined && pick.price !== null) ? "$" + pick.price : "N/A";
+        const vol = (pick.vol_multiple !== undefined && pick.vol_multiple !== null) ? pick.vol_multiple + "x" : "N/A";
+        const change = (pick.pct_change !== undefined && pick.pct_change !== null) ? pick.pct_change + "%" : "N/A";
+        const date = pick.scan_date || scanDate;
 
         card.innerHTML = `
           <div class="ticker">${symbol}</div>
@@ -75,12 +80,13 @@
         containerEl.appendChild(card);
       });
 
-    } catch (error) {
-      console.error("Fetch error details:", error);
-      statusEl.textContent = "Failed to render picks. Check browser console for details.";
+    } catch (err) {
+      statusEl.className = "status error";
+      statusEl.textContent = "Error: " + err.message;
     }
   }
 
+  // Initial fetch on page load
   fetchPicks();
 </script>
 </body>
