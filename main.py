@@ -3,9 +3,15 @@ from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 
+# Allow requests from your Vercel frontend and local development
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://portfolio-tracker-seven-beta.vercel.app", "http://localhost:8000",],
+    allow_origins=[
+        "https://portfolio-tracker-seven-beta.vercel.app",
+        "http://localhost:8000",
+        "http://127.0.0.1:8000",
+        "*"  # Broad access during initial setup
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
