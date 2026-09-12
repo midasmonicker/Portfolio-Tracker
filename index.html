@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stock Scanner Dashboard</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f172a; color: #f8fafc; margin: 0; padding: 20px; }
+    .container { max-width: 900px; margin: 0 auto; }
+    h1 { text-align: center; color: #38bdf8; }
+    .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; margin-top: 20px; }
+    .card { background: #1e293b; border-radius: 8px; padding: 16px; border: 1px solid #334155; }
+    .ticker { font-size: 1.4rem; font-weight: bold; color: #4ade80; }
+    .status { text-align: center; font-style: italic; color: #94a3b8; margin-top: 20px; }
+    button { display: block; margin: 0 auto 20px; background: #0284c7; color: white; border: none; padding: 10px 20px; font-size: 1rem; border-radius: 6px; cursor: pointer; }
+    button:hover { background: #0369a1; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Live Stock Picks</h1>
+    <button onclick="fetchPicks()">Refresh Picks</button>
+    <div id="status" class="status">Loading picks...</div>
+    <div id="picks-container" class="card-grid"></div>
+  </div>
+
+  <script>
+    // REPLACE THIS URL WITH YOUR ACTUAL RENDER API ENDPOINT
+    const API_URL = "https://portfolio-tracker-3ydj.onrender.com/";
+
+    async function fetchPicks() {
+      const statusEl = document.getElementById("status");
+      const containerEl = document.getElementById("picks-container");
+      
+      statusEl.textContent = "Fetching data from Render...";
+      containerEl.innerHTML = "";
+
+      try {
+        const response = await fetch(API_URL);
+        if (!response.ok) throw new Error("API response error");
+        
+        const picks = await response.json();
+        statusEl.textContent = "";
+
+        if (!picks || picks.length === 0) {
+          statusEl.textContent = "No stock picks found.";
+          return;
+        }
+
+        picks.forEach(pick => {
+          const card = document.createElement("div");
+          card.className = "card";
+          card.innerHTML = `
+            <div class="ticker">${pick.ticker || pick.symbol || "N/A"}</div>
+            <p><strong>Score / Strategy:</strong> ${pick.strategy || pick.score || "N/A"}</p>
+            <p><strong>Price:</strong> ${pick.price ? "$" + pick.price : "N/A"}</p>
+          `;
+          containerEl.appendChild(card);
+        });
+
+      } catch (error) {
+        console.error(error);
+        statusEl.textContent = "Failed to load picks. (Check Render status & CORS settings)";
+      }
+    }
+
+    // Fetch picks automatically when page loads
+    fetchPicks();
+  </script>
+</body>
+</html>
