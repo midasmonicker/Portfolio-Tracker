@@ -80,3 +80,6 @@ if __name__ == "__main__":
     found = run_daily_scan(sample_basket)
     print(f"Scan complete. Inserted {found} high-volume picks.")
     
+@app.get("/")
+def read_root():
+    return {"status": "online", "message": "Stock Scanner API is running"}
