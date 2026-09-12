@@ -25,7 +25,6 @@
   </div>
 
 <script>
-  // Your active Render API endpoint
   const API_URL = "https://portfolio-tracker-3ydj.onrender.com/api/picks";
 
   async function fetchPicks() {
@@ -36,14 +35,12 @@
     containerEl.innerHTML = "";
 
     try {
-      // Uses the defined API_URL variable instead of the placeholder string
       const response = await fetch(API_URL);
       if (!response.ok) throw new Error("API response error");
       
       const data = await response.json();
       statusEl.textContent = "";
 
-      // Unpacks array from { date: "...", picks: [...] } structure
       const picks = data.picks || data;
 
       if (!Array.isArray(picks) || picks.length === 0) {
