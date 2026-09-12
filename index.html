@@ -37,6 +37,21 @@
     try {
       const response = await fetch(API_URL);
       if (!response.ok) throw new Error("API response error");
+
+      // Inside fetchPicks() in index.html:
+      const data = await response.json();
+      const rawPicks = data.picks || [];
+      
+      if (rawPicks.length === 0) {
+        statusEl.textContent = "No stock picks found.";
+        return;
+      }
+      
+      // Find the latest scan date in the dataset
+      const latestDate = rawPicks.reduce((max, p) => p.scan_date > max ? p.scan_date : max, rawPicks[0].scan_date);
+      
+      // Filter array to only show items from the latest scan date
+      const picks = rawPicks.filter(p => p.scan_date === latestDate);
       
       const data = await response.json();
       statusEl.textContent = "";
