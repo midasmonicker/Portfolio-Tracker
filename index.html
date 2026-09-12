@@ -1,91 +1,88 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Stock Scanner Dashboard</title>
-  <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f172a; color: #f8fafc; margin: 0; padding: 20px; }
-    .container { max-width: 900px; margin: 0 auto; }
-    h1 { text-align: center; color: #38bdf8; }
-    .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; margin-top: 20px; }
-    .card { background: #1e293b; border-radius: 8px; padding: 16px; border: 1px solid #334155; }
-    .ticker { font-size: 1.4rem; font-weight: bold; color: #4ade80; }
-    .status { text-align: center; font-style: italic; color: #94a3b8; margin-top: 20px; background: #1e293b; padding: 12px; border-radius: 6px; }
-    .error { color: #f87171; border: 1px solid #7f1d1d; }
-    button { display: block; margin: 0 auto 20px; background: #0284c7; color: white; border: none; padding: 10px 20px; font-size: 1rem; border-radius: 6px; cursor: pointer; }
-    button:hover { background: #0369a1; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stock Scanner Dashboard</title>
+<style>
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f172a; color: #f8fafc; margin: 0; padding: 20px; }
+.container { max-width: 900px; margin: 0 auto; }
+h1 { text-align: center; color: #38bdf8; }
+.card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; margin-top: 20px; }
+.card { background: #1e293b; border-radius: 8px; padding: 16px; border: 1px solid #334155; }
+.ticker { font-size: 1.4rem; font-weight: bold; color: #4ade80; }
+.status { text-align: center; font-style: italic; color: #94a3b8; margin-top: 20px; background: #1e293b; padding: 12px; border-radius: 6px; }
+.error { color: #f87171; border: 1px solid #7f1d1d; }
+button { display: block; margin: 0 auto 20px; background: #0284c7; color: white; border: none; padding: 10px 20px; font-size: 1rem; border-radius: 6px; cursor: pointer; }
+button:hover { background: #0369a1; }
+</style>
 </head>
 <body>
-  <div class="container">
-    <h1>Live Stock Picks</h1>
-    <button onclick="fetchPicks()">Refresh Picks</button>
-    <div id="status" class="status">Loading picks...</div>
-    <div id="picks-container" class="card-grid"></div>
-  </div>
+<div class="container">
+<h1>Live Stock Picks</h1>
+<button onclick="fetchPicks()">Refresh Picks</button>
+<div id="status" class="status">Loading picks...</div>
+<div id="picks-container" class="card-grid"></div>
+</div>
 
 <script>
-  const API_URL = "https://portfolio-tracker-3ydj.onrender.com/api/picks";
+const API_URL = "https://portfolio-tracker-3ydj.onrender.com/api/picks";
 
-  async function fetchPicks() {
-    const statusEl = document.getElementById("status");
-    const containerEl = document.getElementById("picks-container");
-    
-    statusEl.className = "status";
-    statusEl.textContent = "Fetching data from Render...";
-    containerEl.innerHTML = "";
+async function fetchPicks() {
+const statusEl = document.getElementById("status");
+const containerEl = document.getElementById("picks-container");
+statusEl.className = "status";
+statusEl.textContent = "Fetching data from Render...";
+containerEl.innerHTML = "";
 
-    try {
-      const response = await fetch(API_URL);
-      if (!response.ok) {
-        throw new Error("HTTP Status " + response.status);
-      }
+try {
+const response = await fetch(API_URL);
+if (!response.ok) {
+throw new Error("HTTP Status " + response.status);
+}
 
-      const data = await response.json();
+const data = await response.json();
+let list = [];
+if (Array.isArray(data)) {
+list = data;
+} else if (data && Array.isArray(data.picks)) {
+list = data.picks;
+}
 
-      let list = [];
-      if (Array.isArray(data)) {
-        list = data;
-      } else if (data && Array.isArray(data.picks)) {
-        list = data.picks;
-      }
+if (list.length === 0) {
+statusEl.textContent = "Connected successfully, but 0 stock picks were returned.";
+return;
+}
 
-      if (list.length === 0) {
-        statusEl.textContent = "Connected successfully, but 0 stock picks were returned.";
-        return;
-      }
+const scanDate = (data && data.date) || list[0].scan_date || "Latest";
+statusEl.textContent = "Showing picks for " + scanDate + " (" + list.length + " total)";
 
-      const scanDate = (data && data.date) || list[0].scan_date || "Latest";
-      statusEl.textContent = "Showing picks for " + scanDate + " (" + list.length + " total)";
+list.forEach(pick => {
+const card = document.createElement("div");
+card.className = "card";
+const symbol = pick.symbol || pick.ticker || "N/A";
+const price = (pick.price !== undefined && pick.price !== null) ? "$" + pick.price : "N/A";
+const vol = (pick.vol_multiple !== undefined && pick.vol_multiple !== null) ? pick.vol_multiple + "x" : "N/A";
+const change = (pick.pct_change !== undefined && pick.pct_change !== null) ? pick.pct_change + "%" : "N/A";
+const date = pick.scan_date || scanDate;
 
-      list.forEach(pick => {
-        const card = document.createElement("div");
-        card.className = "card";
-        
-        const symbol = pick.symbol || pick.ticker || "N/A";
-        const price = (pick.price !== undefined && pick.price !== null) ? "$" + pick.price : "N/A";
-        const vol = (pick.vol_multiple !== undefined && pick.vol_multiple !== null) ? pick.vol_multiple + "x" : "N/A";
-        const change = (pick.pct_change !== undefined && pick.pct_change !== null) ? pick.pct_change + "%" : "N/A";
-        const date = pick.scan_date || scanDate;
+card.innerHTML = `
+<div class="ticker">${symbol}</div>
+<p><strong>Price:</strong> ${price}</p>
+<p><strong>Volume Multiple:</strong> ${vol}</p>
+<p><strong>Change:</strong> ${change}</p>
+<p><strong>Scan Date:</strong> ${date}</p>
+`;
+containerEl.appendChild(card);
+});
 
-        card.innerHTML = `
-          <div class="ticker">${symbol}</div>
-          <p><strong>Price:</strong> ${price}</p>
-          <p><strong>Volume Multiple:</strong> ${vol}</p>
-          <p><strong>Change:</strong> ${change}</p>
-          <p><strong>Scan Date:</strong> ${date}</p>
-        `;
-        containerEl.appendChild(card);
-      });
+} catch (err) {
+statusEl.className = "status error";
+statusEl.textContent = "Error: " + err.message;
+}
+}
 
-    } catch (err) {
-      statusEl.className = "status error";
-      statusEl.textContent = "Error: " + err.message;
-    }
-  }
-
-  fetchPicks();
+fetchPicks();
 </script>
 </body>
 </html>
