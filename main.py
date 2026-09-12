@@ -5,7 +5,7 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["portfolio-tracker-6byh182nm-midas-monicker.vercel.app", "http://localhost:8000",],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -28,7 +28,7 @@ app = FastAPI(title="Stock Screening Engine")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["portfolio-tracker-6byh182nm-midas-monicker.vercel.app", "http://localhost:8000",],
     allow_methods=["*"],
     allow_headers=["*"],
 )
