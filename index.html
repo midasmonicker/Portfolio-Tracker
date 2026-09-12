@@ -39,7 +39,8 @@
         const response = await fetch(API_URL);
         if (!response.ok) throw new Error("API response error");
         
-        const picks = await response.json();
+        const data = await response.json();
+        const picks = data.picks || data;
         statusEl.textContent = "";
 
         if (!picks || picks.length === 0) {
