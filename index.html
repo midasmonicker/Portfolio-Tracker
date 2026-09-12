@@ -25,7 +25,7 @@
   </div>
 
   <script>
-    // REPLACE THIS URL WITH YOUR ACTUAL RENDER API ENDPOINT
+    // MAKE SURE THIS ENDS WITH /api/picks
     const API_URL = "https://portfolio-tracker-3ydj.onrender.com/api/picks";
 
     async function fetchPicks() {
@@ -40,10 +40,12 @@
         if (!response.ok) throw new Error("API response error");
         
         const data = await response.json();
-        const picks = data.picks || data;
         statusEl.textContent = "";
 
-        if (!picks || picks.length === 0) {
+        // Unpacks array from { date: "...", picks: [...] } structure
+        const picks = data.picks || data;
+
+        if (!Array.isArray(picks) || picks.length === 0) {
           statusEl.textContent = "No stock picks found.";
           return;
         }
@@ -52,9 +54,10 @@
           const card = document.createElement("div");
           card.className = "card";
           card.innerHTML = `
-            <div class="ticker">${pick.ticker || pick.symbol || "N/A"}</div>
-            <p><strong>Score / Strategy:</strong> ${pick.strategy || pick.score || "N/A"}</p>
+            <div class="ticker">${pick.symbol || pick.ticker || "N/A"}</div>
             <p><strong>Price:</strong> ${pick.price ? "$" + pick.price : "N/A"}</p>
+            <p><strong>Volume Multiple:</strong> ${pick.vol_multiple ? pick.vol_multiple + "x" : "N/A"}</p>
+            <p><strong>Change:</strong> ${pick.pct_change ? pick.pct_change + "%" : "N/A"}</p>
           `;
           containerEl.appendChild(card);
         });
@@ -65,7 +68,6 @@
       }
     }
 
-    // Fetch picks automatically when page loads
     fetchPicks();
   </script>
 </body>
