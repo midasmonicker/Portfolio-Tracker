@@ -37,49 +37,47 @@
     try {
       const response = await fetch(API_URL);
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw new Error("HTTP Status: " + response.status);
       }
 
       const data = await response.json();
-      console.log("API Payload received:", data);
+      console.log("Raw JSON payload:", data);
 
-      const rawPicks = Array.isArray(data) ? data : (data.picks || []);
-      
-      if (!Array.isArray(rawPicks) || rawPicks.length === 0) {
-        statusEl.textContent = "No stock picks found.";
-        return;
-      }
-      
-      const validPicks = rawPicks.filter(p => p && p.scan_date);
-      if (validPicks.length === 0) {
-        statusEl.textContent = "No picks with valid scan dates found.";
+      // Extract picks array safely whether data is array or object
+      const picks = Array.isArray(data) ? data : (data.picks || []);
+      const scanDate = data.date || (picks.length > 0 ? picks[0].scan_date : null);
+
+      if (!picks || picks.length === 0) {
+        statusEl.textContent = "No stock picks found for today.";
         return;
       }
 
-      const latestDate = validPicks.reduce(
-        (max, p) => (p.scan_date > max ? p.scan_date : max), 
-        validPicks[0].scan_date
-      );
-      
-      const picks = validPicks.filter(p => p.scan_date === latestDate);
-      statusEl.textContent = `Showing latest picks for ${latestDate}`;
+      statusEl.textContent = scanDate ? `Showing picks for ${scanDate}` : "";
 
       picks.forEach(pick => {
         const card = document.createElement("div");
         card.className = "card";
+        
+        // Format values safely
+        const symbol = pick.symbol || pick.ticker || "N/A";
+        const price = pick.price !== undefined && pick.price !== null ? `$${pick.price}` : "N/A";
+        const vol = pick.vol_multiple !== undefined && pick.vol_multiple !== null ? `${pick.vol_multiple}x` : "N/A";
+        const change = pick.pct_change !== undefined && pick.pct_change !== null ? `${pick.pct_change}%` : "N/A";
+        const date = pick.scan_date || scanDate || "N/A";
+
         card.innerHTML = `
-          <div class="ticker">${pick.symbol || "N/A"}</div>
-          <p><strong>Price:</strong> ${pick.price !== undefined ? "$" + pick.price : "N/A"}</p>
-          <p><strong>Volume Multiple:</strong> ${pick.vol_multiple !== undefined ? pick.vol_multiple + "x" : "N/A"}</p>
-          <p><strong>Change:</strong> ${pick.pct_change !== undefined ? pick.pct_change + "%" : "N/A"}</p>
-          <p><strong>Scan Date:</strong> ${pick.scan_date || "N/A"}</p>
+          <div class="ticker">${symbol}</div>
+          <p><strong>Price:</strong> ${price}</p>
+          <p><strong>Volume Multiple:</strong> ${vol}</p>
+          <p><strong>Change:</strong> ${change}</p>
+          <p><strong>Scan Date:</strong> ${date}</p>
         `;
         containerEl.appendChild(card);
       });
 
     } catch (error) {
-      console.error("Fetch error detailed:", error);
-      statusEl.textContent = "Failed to load picks. Open browser Developer Tools (F12) -> Console to inspect errors.";
+      console.error("Fetch error details:", error);
+      statusEl.textContent = "Failed to render picks. Check browser console for details.";
     }
   }
 
