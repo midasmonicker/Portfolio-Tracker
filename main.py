@@ -87,14 +87,29 @@ def run_daily_scan(tickers: list, vol_threshold=1.2, min_price=5.0):
 
 @app.get("/api/picks")
 def get_picks():
-    # Orders by scan_date descending and returns the latest records
-    response = (
+    # 1. Fetch the latest available scan_date
+    latest_date_res = (
         supabase.table("stock_picks")
-        .select("*")
+        .select("scan_date")
         .order("scan_date", desc=True)
+        .limit(1)
         .execute()
     )
-    return {"date": "2026-09-12", "picks": response.data}
+
+    if not latest_date_res.data:
+        return {"date": None, "picks": []}
+
+    latest_date = latest_date_res.data[0]["scan_date"]
+
+    # 2. Fetch only the picks for that specific date
+    picks_res = (
+        supabase.table("stock_picks")
+        .select("*")
+        .eq("scan_date", latest_date)
+        .execute()
+    )
+
+    return {"date": latest_date, "picks": picks_res.data}
     
 if __name__ == "__main__":
     sample_basket = ["AAPL", "AMD", "NVDA", "PLTR", "SOFI", "TSLA", "MARA", "RIOT", "F", "BAC", "INTC", "AMZN", "MSFT", "GOOGL"]
