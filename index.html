@@ -12,7 +12,7 @@
     .card { background: #1e293b; border-radius: 8px; padding: 16px; border: 1px solid #334155; }
     .ticker { font-size: 1.4rem; font-weight: bold; color: #4ade80; }
     .status { text-align: center; font-style: italic; color: #94a3b8; margin-top: 20px; }
-    button { display: block; margin: 0 auto 20px; background: #0284c7; color: white; border: none; padding: 10px 20px; font-size: 1rem; border-radius: 6px; cursor: cursor; }
+    button { display: block; margin: 0 auto 20px; background: #0284c7; color: white; border: none; padding: 10px 20px; font-size: 1rem; border-radius: 6px; cursor: pointer; }
     button:hover { background: #0369a1; }
   </style>
 </head>
@@ -36,25 +36,32 @@
 
     try {
       const response = await fetch(API_URL);
-      if (!response.ok) throw new Error("API response error");
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
 
       const data = await response.json();
-      const rawPicks = data.picks || data || [];
+      console.log("API Payload received:", data);
+
+      const rawPicks = Array.isArray(data) ? data : (data.picks || []);
       
       if (!Array.isArray(rawPicks) || rawPicks.length === 0) {
         statusEl.textContent = "No stock picks found.";
         return;
       }
       
-      // Find the latest scan date in the dataset
-      const latestDate = rawPicks.reduce(
+      const validPicks = rawPicks.filter(p => p && p.scan_date);
+      if (validPicks.length === 0) {
+        statusEl.textContent = "No picks with valid scan dates found.";
+        return;
+      }
+
+      const latestDate = validPicks.reduce(
         (max, p) => (p.scan_date > max ? p.scan_date : max), 
-        rawPicks[0].scan_date
+        validPicks[0].scan_date
       );
       
-      // Filter array to show only items from the latest scan date
-      const picks = rawPicks.filter(p => p.scan_date === latestDate);
-
+      const picks = validPicks.filter(p => p.scan_date === latestDate);
       statusEl.textContent = `Showing latest picks for ${latestDate}`;
 
       picks.forEach(pick => {
@@ -62,17 +69,17 @@
         card.className = "card";
         card.innerHTML = `
           <div class="ticker">${pick.symbol || "N/A"}</div>
-          <p><strong>Price:</strong> ${pick.price ? "$" + pick.price : "N/A"}</p>
-          <p><strong>Volume Multiple:</strong> ${pick.vol_multiple ? pick.vol_multiple + "x" : "N/A"}</p>
-          <p><strong>Change:</strong> ${pick.pct_change ? pick.pct_change + "%" : "N/A"}</p>
+          <p><strong>Price:</strong> ${pick.price !== undefined ? "$" + pick.price : "N/A"}</p>
+          <p><strong>Volume Multiple:</strong> ${pick.vol_multiple !== undefined ? pick.vol_multiple + "x" : "N/A"}</p>
+          <p><strong>Change:</strong> ${pick.pct_change !== undefined ? pick.pct_change + "%" : "N/A"}</p>
           <p><strong>Scan Date:</strong> ${pick.scan_date || "N/A"}</p>
         `;
         containerEl.appendChild(card);
       });
 
     } catch (error) {
-      console.error("Fetch error:", error);
-      statusEl.textContent = "Failed to load picks. (Check Render URL & CORS settings)";
+      console.error("Fetch error detailed:", error);
+      statusEl.textContent = "Failed to load picks. Open browser Developer Tools (F12) -> Console to inspect errors.";
     }
   }
 
