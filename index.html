@@ -24,51 +24,52 @@
     <div id="picks-container" class="card-grid"></div>
   </div>
 
-  <script>
-    // MAKE SURE THIS ENDS WITH /api/picks
-    const API_URL = "https://portfolio-tracker-3ydj.onrender.com/api/picks";
+<script>
+  // Your exact Render API endpoint
+  const API_URL = "https://portfolio-tracker-3ydj.onrender.com/api/picks"; // Replace with your actual Render API URL if different!
 
-    async function fetchPicks() {
-      const statusEl = document.getElementById("status");
-      const containerEl = document.getElementById("picks-container");
+  async function fetchPicks() {
+    const statusEl = document.getElementById("status");
+    const containerEl = document.getElementById("picks-container");
+    
+    statusEl.textContent = "Fetching data from Render...";
+    containerEl.innerHTML = "";
+
+    try {
+      const response = await fetch("https://<YOUR-RENDER-APP-NAME>.onrender.com/api/picks");
+      if (!response.ok) throw new Error("API response error");
       
-      statusEl.textContent = "Fetching data from Render...";
-      containerEl.innerHTML = "";
+      const data = await response.json();
+      statusEl.textContent = "";
 
-      try {
-        const response = await fetch(API_URL);
-        if (!response.ok) throw new Error("API response error");
-        
-        const data = await response.json();
-        statusEl.textContent = "";
+      // Unpacks the array from { date: "...", picks: [...] }
+      const picks = data.picks || data;
 
-        // Unpacks array from { date: "...", picks: [...] } structure
-        const picks = data.picks || data;
-
-        if (!Array.isArray(picks) || picks.length === 0) {
-          statusEl.textContent = "No stock picks found.";
-          return;
-        }
-
-        picks.forEach(pick => {
-          const card = document.createElement("div");
-          card.className = "card";
-          card.innerHTML = `
-            <div class="ticker">${pick.symbol || pick.ticker || "N/A"}</div>
-            <p><strong>Price:</strong> ${pick.price ? "$" + pick.price : "N/A"}</p>
-            <p><strong>Volume Multiple:</strong> ${pick.vol_multiple ? pick.vol_multiple + "x" : "N/A"}</p>
-            <p><strong>Change:</strong> ${pick.pct_change ? pick.pct_change + "%" : "N/A"}</p>
-          `;
-          containerEl.appendChild(card);
-        });
-
-      } catch (error) {
-        console.error(error);
-        statusEl.textContent = "Failed to load picks. (Check Render status & CORS settings)";
+      if (!Array.isArray(picks) || picks.length === 0) {
+        statusEl.textContent = "No stock picks found.";
+        return;
       }
-    }
 
-    fetchPicks();
-  </script>
+      picks.forEach(pick => {
+        const card = document.createElement("div");
+        card.className = "card";
+        card.innerHTML = `
+          <div class="ticker">${pick.symbol || "N/A"}</div>
+          <p><strong>Price:</strong> ${pick.price ? "$" + pick.price : "N/A"}</p>
+          <p><strong>Volume Multiple:</strong> ${pick.vol_multiple ? pick.vol_multiple + "x" : "N/A"}</p>
+          <p><strong>Change:</strong> ${pick.pct_change ? pick.pct_change + "%" : "N/A"}</p>
+          <p><strong>Scan Date:</strong> ${pick.scan_date || "N/A"}</p>
+        `;
+        containerEl.appendChild(card);
+      });
+
+    } catch (error) {
+      console.error("Fetch error:", error);
+      statusEl.textContent = "Failed to load picks. (Check Render URL & CORS settings)";
+    }
+  }
+
+  fetchPicks();
+</script>
 </body>
 </html>
