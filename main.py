@@ -80,13 +80,12 @@ def run_daily_scan(tickers: list, vol_threshold=1.2, min_price=5.0):
     return len(results)
 
 @app.get("/api/picks")
-def get_latest_picks(date: str = None):
-    query_date = date if date else datetime.now().strftime("%Y-%m-%d")
-    if not supabase:
-        return {"error": "Supabase credentials not configured."}
-    response = supabase.table("stock_picks").select("*").eq("scan_date", query_date).order("vol_multiple", desc=True).execute()
-    return {"date": query_date, "picks": response.data}
-
+def get_picks():
+    # Fetch picks from Supabase
+    response = supabase.table("picks").select("*").execute()
+    # Return directly as a list instead of nesting in a dictionary
+    return response.data
+    
 if __name__ == "__main__":
     sample_basket = ["AAPL", "AMD", "NVDA", "PLTR", "SOFI", "TSLA", "MARA", "RIOT", "F", "BAC", "INTC", "AMZN", "MSFT", "GOOGL"]
     print(f"Running daily scan on {len(sample_basket)} tickers...")
