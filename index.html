@@ -44,7 +44,6 @@
 
       const data = await response.json();
 
-      // Extract the array regardless of response shape
       let list = [];
       if (Array.isArray(data)) {
         list = data;
@@ -86,7 +85,6 @@
     }
   }
 
-  // Initial fetch on page load
   fetchPicks();
 </script>
 </body>
