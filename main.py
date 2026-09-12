@@ -87,13 +87,14 @@ def run_daily_scan(tickers: list, vol_threshold=1.2, min_price=5.0):
 
 @app.get("/api/picks")
 def get_picks():
-    try:
-        # Querying the correct table name: 'stock_picks'
-        response = supabase.table("stock_picks").select("*").execute()
-        return {"date": "2026-09-12", "picks": response.data}
-    except Exception as e:
-        print(f"Error fetching stock picks: {e}")
-        return {"error": str(e), "picks": []}
+    # Orders by scan_date descending and returns the latest records
+    response = (
+        supabase.table("stock_picks")
+        .select("*")
+        .order("scan_date", desc=True)
+        .execute()
+    )
+    return {"date": "2026-09-12", "picks": response.data}
     
 if __name__ == "__main__":
     sample_basket = ["AAPL", "AMD", "NVDA", "PLTR", "SOFI", "TSLA", "MARA", "RIOT", "F", "BAC", "INTC", "AMZN", "MSFT", "GOOGL"]
