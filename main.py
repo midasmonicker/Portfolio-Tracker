@@ -3,30 +3,27 @@ from datetime import datetime
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import pandas as pd
+import requests
 from supabase import Client, create_client
 import yfinance as yf
 
-# 1. Initialize FastAPI Application
+# Initialize FastAPI Application
 app = FastAPI(title="Stock Screening Engine")
 
-# 2. Configure CORS Middleware (Single, global declaration)
+# CORS Configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://midasmonicker.github.io",
-        "https://portfolio-tracker-seven-beta.vercel.app",
-        "http://localhost:8000",
-        "http://127.0.0.1:8000",
-        "*",
-    ],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# 3. Initialize Supabase Client
+# Environment Variables
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "")
+TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "")
 
 supabase: Client = (
     create_client(SUPABASE_URL, SUPABASE_KEY)
@@ -35,9 +32,41 @@ supabase: Client = (
 )
 
 
-# 4. Core Scanning Logic
+def send_telegram_alert(picks: list):
+    """Formats and sends stock picks to a Telegram channel/chat."""
+    if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
+        print("Telegram configuration missing. Skipping notification.")
+        return
+
+    message = f"🚀 *High-Volume Stock Picks ({datetime.now().strftime('%Y-%m-%d')})*\n\n"
+
+    for p in picks:
+        message += (
+            f"• *{p['symbol']}*\n"
+            f"  💰 Price: ${p['price']}\n"
+            f"  📊 Volume Multiple: {p['vol_multiple']}x\n"
+            f"  📈 Change: {p['pct_change']}%\n\n"
+        )
+
+    url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
+    payload = {
+        "chat_id": TELEGRAM_CHAT_ID,
+        "text": message,
+        "parse_mode": "Markdown",
+    }
+
+    try:
+        response = requests.post(url, json=payload, timeout=10)
+        if response.status_code == 200:
+            print("Telegram alert sent successfully!")
+        else:
+            print(f"Failed to send Telegram alert: {response.text}")
+    except Exception as e:
+        print(f"Error sending Telegram notification: {e}")
+
+
 def run_daily_scan(tickers: list, vol_threshold=1.2, min_price=5.0):
-    """Scans tickers for volume spikes and writes results to Supabase."""
+    """Scans tickers for volume spikes, writes to Supabase, and triggers alerts."""
     results = []
     today_str = datetime.now().strftime("%Y-%m-%d")
 
@@ -81,30 +110,28 @@ def run_daily_scan(tickers: list, vol_threshold=1.2, min_price=5.0):
 
     print(f"Found {len(results)} qualifying stock picks.")
 
-    if results and supabase:
-        response = supabase.table("stock_picks").upsert(results).execute()
-        print(f"Successfully upserted {len(results)} records to Supabase.")
-    elif not supabase:
-        print("ERROR: Supabase client is not initialized.")
+    if results:
+        if supabase:
+            supabase.table("stock_picks").upsert(results).execute()
+            print(f"Successfully upserted {len(results)} records to Supabase.")
+
+        # Send Telegram Notification
+        send_telegram_alert(results)
 
     return len(results)
 
 
-# 5. API Endpoints
 @app.get("/")
 def read_root():
-    """Health-check endpoint for Render logs."""
     return {"status": "online", "message": "Stock Scanner API is running"}
 
 
 @app.get("/api/picks")
 def get_picks():
-    """Fetches the stock picks for the latest available scan_date."""
     if not supabase:
         return {"error": "Supabase client uninitialized", "picks": []}
 
     try:
-        # Fetch the most recent scan_date in the database
         latest_date_res = (
             supabase.table("stock_picks")
             .select("scan_date")
@@ -118,7 +145,6 @@ def get_picks():
 
         latest_date = latest_date_res.data[0]["scan_date"]
 
-        # Fetch all picks matching that latest date
         picks_res = (
             supabase.table("stock_picks")
             .select("*")
@@ -131,7 +157,6 @@ def get_picks():
         return {"error": str(e), "picks": []}
 
 
-# 6. Standalone Execution Entrypoint
 if __name__ == "__main__":
     sample_basket = [
         "AAPL",
