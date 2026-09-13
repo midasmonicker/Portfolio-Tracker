@@ -120,3 +120,27 @@ if __name__ == "__main__":
 @app.get("/")
 def read_root():
     return {"status": "online", "message": "Stock Scanner API is running"}
+
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+app = FastAPI()
+
+# Enable CORS for all origins (or specify GitHub Pages)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "https://midasmonicker.github.io",
+        "http://localhost:8000",
+        "http://127.0.0.1:8000",
+        "*"  # Allows access from any domain (including Vercel/GitHub Pages)
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows GET, POST, OPTIONS, etc.
+    allow_headers=["*"],  # Allows all headers
+)
+
+@app.get("/api/picks")
+def get_picks():
+    # Your existing route handler code here
+    return {"picks": [...]}
