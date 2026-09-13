@@ -144,3 +144,28 @@ app.add_middleware(
 def get_picks():
     # Your existing route handler code here
     return {"picks": [...]}
+
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+app = FastAPI()
+
+# Enable CORS for frontend clients
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allows GitHub Pages, Vercel, and local testing
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Root endpoint (Fixes the 404 health check in Render logs)
+@app.get("/")
+def read_root():
+    return {"status": "online", "message": "Portfolio Tracker API is running"}
+
+# Your existing picks endpoint
+@app.get("/api/picks")
+def get_picks():
+    # Return your stock scanner picks
+    return {"picks": []}
